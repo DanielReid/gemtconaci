@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patavi-worker
+  namespace: addis-poc-devtest
+  labels:
+    app: patavi-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: patavi-worker
+
+  template:
+    metadata:
+      labels:
+        app: patavi-worker
+    spec:
+      containers:
+      - name: patavi-worker
+        image: "addis/patavi-gemtc-worker"
+        env:
+        - name: PATAVI_BROKER_HOST
+          value: "my-rabbit-rabbitmq"
+        ports:
+        - name: patavi-worker
+          containerPort: 3001
+        resources:
+          limits:
+            cpu: 0.5

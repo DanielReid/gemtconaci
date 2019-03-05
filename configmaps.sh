@@ -1,0 +1,1 @@
+kubectl create configmap  certs --from-file=ssl/key.pem --from-file=ssl/crt.pem --from-file=ssl/ca-crt.pem

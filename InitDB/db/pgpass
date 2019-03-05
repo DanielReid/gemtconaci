@@ -1,0 +1,3 @@
+postgres-postgresql:5432:*:postgres:develop
+postgres-postgresql:5432:*:gemtc:develop
+postgres-postgresql:5432:*:patavi:develop

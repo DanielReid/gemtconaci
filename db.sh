@@ -1,0 +1,1 @@
+kubectl run initdb --image inklin/initdb:users --restart=OnFailure -n addis-poc-devtest

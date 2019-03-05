@@ -1,0 +1,69 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: patavi-server
+  namespace: addis-poc-devtest
+  labels:
+    app: patavi-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: patavi-server
+
+  template:
+    metadata:
+      labels:
+        app: patavi-server
+    spec:
+      volumes:
+      - name: ssl-volume
+        configMap:
+          name: certs
+          # Seems like the patavi server hard codes the SSL keys
+          items:
+          - key: crt.pem
+            path: server-crt.pem
+          - key: key.pem
+            path: server-key.pem
+          - key: ca-crt.pem
+            path: ca-crt.pem
+
+
+      containers:
+      - name: patavi-server
+        image: "addis/patavi-server"
+        volumeMounts:
+        - name: ssl-volume
+          mountPath: /var/lib/patavi/ssl
+
+        env:
+        - name: "PATAVI_DB_HOST"
+          value: "postgres-postgresql"
+        - name: "PATAVI_DB_NAME"
+          value: "patavi"
+        - name: "PATAVI_DB_USER"
+          value: "patavi"
+        - name: "PATAVI_DB_PASSWORD"
+          value: "develop"
+        - name: "PATAVI_PORT"
+          value: "3000"
+        - name: "PATAVI_BROKER_HOST"
+          value: "my-rabbit-rabbitmq"
+        - name: "PATAVI_SELF"
+          value: "//addispatavi.corpnet1.com:3000"
+        - name: "PATAVI_CLIENT_KEY"
+          value: "ssl/server-key.pem"
+        - name: "PATAVI_CLIENT_CRT"
+          value: "ssl/server-crt.pem"
+        - name: "PATAVI_CA"
+          value: "ssl/ca-crt.pem"
+          
+
+        ports:
+        - name: patavi-server
+          containerPort: 3000
+        resources:
+          limits:
+            cpu: 0.5
+            memory: "512M"
