@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: patavi-gemtc-worker
-  namespace: gemtc
+  namespace: addis-poc-devtest
   labels:
     app: patavi-gemtc-worker
 spec:

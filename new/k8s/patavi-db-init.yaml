@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: patavi-db-init
-  namespace: gemtc
+  namespace: addis-poc-devtest
   labels:
     app: patavi-db-init
 spec:

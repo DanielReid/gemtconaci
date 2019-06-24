@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: gemtc-db-init
-  namespace: gemtc
+  namespace: addis-poc-devtest
   labels:
     app: gemtc-db-init
 spec:
