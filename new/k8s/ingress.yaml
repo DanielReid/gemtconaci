@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-config
+  namespace: gemtc
+spec:
+  tls:
+    - hosts:
+      - gemtc-k8s.drugis.org
+      secretName: wildcard-secret
+    - hosts:
+      - patavi-k8s.drugis.org
+      secretName: wildcard-secret
+  rules:
+  - host: gemtc-k8s.drugis.org
+    http:
+      paths:
+      - backend:
+          serviceName: gemtc
+          servicePort: 3001
+  - host: patavi-k8s.drugis.org
+    http:
+      paths:
+      - backend:
+          serviceName: patavi
+          servicePort: 3000
