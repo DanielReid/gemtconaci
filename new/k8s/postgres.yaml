@@ -7,7 +7,6 @@ metadata:
     type: standard
     app: postgres
 spec:
-  storageClassName: standard
   capacity:
     storage: 5Gi
   accessModes:
