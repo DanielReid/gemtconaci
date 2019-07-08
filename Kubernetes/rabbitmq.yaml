@@ -3,29 +3,27 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: my-rabbit-rabbitmq
+  name: rabbitmq
+  namespace: addis-poc-devtest
   labels:
     app: rabbitmq
     chart: rabbitmq-4.0.1
-    release: "my-rabbit"
+    release: "rabbit"
     heritage: "Tiller"
 type: Opaque
 data:
-  
-  rabbitmq-password: "Z3Vlc3Q="
-  
-  
   rabbitmq-erlang-cookie: "UEJBZlZSVWlmV2JBOWttR1ZZUlFhUHJwWTRDd3g3U3U="
 ---
 # Source: rabbitmq/templates/configuration.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: my-rabbit-rabbitmq-config
+  name: rabbitmq-config
+  namespace: addis-poc-devtest
   labels:
     app: rabbitmq
     chart: rabbitmq-4.0.1
-    release: "my-rabbit"
+    release: "rabbit"
     heritage: "Tiller"
 data:
   enabled_plugins: |-
@@ -33,7 +31,7 @@ data:
   rabbitmq.conf: |-
     ##username and password
     default_user=guest
-    default_pass=CHANGEME
+    default_pass=develop
     ## Clustering
     cluster_partition_handling = autoheal
     ## queue master locator
@@ -45,11 +43,12 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-rabbit-rabbitmq-headless
+  name: rabbitmq-headless
+  namespace: addis-poc-devtest
   labels:
     app: rabbitmq
     chart: rabbitmq-4.0.1
-    release: "my-rabbit"
+    release: "rabbit"
     heritage: "Tiller"
 spec:
   clusterIP: None
@@ -68,17 +67,18 @@ spec:
     targetPort: stats
   selector:
     app: rabbitmq
-    release: "my-rabbit"
+    release: "rabbit"
 ---
 # Source: rabbitmq/templates/svc.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: my-rabbit-rabbitmq
+  name: rabbitmq
+  namespace: addis-poc-devtest
   labels:
     app: rabbitmq
     chart: rabbitmq-4.0.1
-    release: "my-rabbit"
+    release: "rabbit"
     heritage: "Tiller"
 spec:
   type: ClusterIP
@@ -97,30 +97,31 @@ spec:
     targetPort: stats
   selector:
     app: rabbitmq
-    release: "my-rabbit"
+    release: "rabbit"
 ---
 # Source: rabbitmq/templates/statefulset.yaml
 apiVersion: apps/v1beta2
 kind: StatefulSet
 metadata:
-  name: my-rabbit-rabbitmq
+  name: rabbitmq
+  namespace: addis-poc-devtest
   labels:
     app: rabbitmq
     chart: rabbitmq-4.0.1
-    release: "my-rabbit"
+    release: "rabbit"
     heritage: "Tiller"
 spec:
-  serviceName: my-rabbit-rabbitmq-headless
+  serviceName: rabbitmq-headless
   replicas: 1
   selector:
     matchLabels:
       app: rabbitmq
-      release: "my-rabbit"
+      release: "rabbit"
   template:
     metadata:
       labels:
         app: rabbitmq
-        release: "my-rabbit"
+        release: "rabbit"
         chart: rabbitmq-4.0.1
     spec:
       terminationGracePeriodSeconds: 10
@@ -193,7 +194,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: K8S_SERVICE_NAME
-            value: "my-rabbit-rabbitmq-headless"
+            value: "rabbitmq-headless"
           - name: K8S_ADDRESS_TYPE
             value: ip
           - name: RABBITMQ_NODENAME
@@ -205,20 +206,20 @@ spec:
           - name: RABBITMQ_ERL_COOKIE
             valueFrom:
               secretKeyRef:
-                name: my-rabbit-rabbitmq
+                name: rabbitmq
                 key: rabbitmq-erlang-cookie
           - name: RABBITMQ_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: my-rabbit-rabbitmq
-                key: rabbitmq-password
+                name: passwords
+                key: rabbit-password
       securityContext:
         fsGroup: 1001
         runAsUser: 1001
       volumes:
         - name: config-volume
           configMap:
-            name: my-rabbit-rabbitmq-config
+            name: rabbitmq-config
             items:
             - key: rabbitmq.conf
               path: rabbitmq.conf

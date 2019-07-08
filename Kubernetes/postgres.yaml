@@ -1,161 +1,60 @@
----
-# Source: postgresql/templates/secrets.yaml
 apiVersion: v1
-kind: Secret
+kind: PersistentVolume
 metadata:
-  name: postgres-postgresql
+  name: postgres-pv-volume
+  namespace: addis-poc-devtest
   labels:
-    app: postgresql
-    chart: postgresql-3.1.0
-    release: "postgres"
-    heritage: "Tiller"
-type: Opaque
-data:
-  
-  postgresql-password: "ZGV2ZWxvcA=="
----
-# Source: postgresql/templates/initialization-configmap.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-postgresql-init-scripts
-  labels:
-    app: postgresql
-    chart: postgresql-3.1.0
-    release: "postgres"
-    heritage: "Tiller"
-data:
-  README.md: |-
-    You can copy here your custom `.sh`, `.sql` or `.sql.gz` file so they are executed during the first boot of the image.
-  
-    More info in the [bitnami-docker-postgresql](https://github.com/bitnami/bitnami-docker-postgresql#initializing-a-new-instance) repository.
----
-# Source: postgresql/templates/svc-headless.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres-postgresql-headless
-  labels:
-    app: postgresql
-    chart: postgresql-3.1.0
-    release: "postgres"
-    heritage: "Tiller"
+    type: standard
+    app: postgres
 spec:
-  type: ClusterIP
-  clusterIP: None
-  ports:
-  - name: postgresql
-    port: 5432
-    targetPort: postgresql
-  selector:
-    app: postgresql
-    release: "postgres"
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
 ---
-# Source: postgresql/templates/svc.yaml
 apiVersion: v1
-kind: Service
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pv-claim
+  namespace: addis-poc-devtest
+  labels:
+    app: postgres
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
   name: postgres
-  labels:
-    app: postgresql
-    chart: postgresql-3.1.0
-    release: "postgres"
-    heritage: "Tiller"
+  namespace: addis-poc-devtest
 spec:
-  type: ClusterIP
-  ports:
-  - name: postgresql
-    port:  5432
-    targetPort: postgresql
-  selector:
-    app: postgresql
-    release: "postgres"
-    role: master
----
-# Source: postgresql/templates/statefulset.yaml
-apiVersion: apps/v1beta2
-kind: StatefulSet
-metadata:
-  name: postgres-postgresql
-  labels:
-    app: postgresql
-    chart: postgresql-3.1.0
-    release: "postgres"
-    heritage: "Tiller"
-spec:
-  serviceName: postgres-postgresql-headless
   replicas: 1
-  updateStrategy:
-    type: RollingUpdate
-  selector:
-    matchLabels:
-      app: postgresql
-      release: "postgres"
-      role: master
   template:
     metadata:
-      name: postgres-postgresql
       labels:
-        app: postgresql
-        chart: postgresql-3.1.0
-        release: "postgres"
-        heritage: "Tiller"
-        role: master
+        app: postgres
     spec:
-      securityContext:
-        fsGroup: 1001
-        runAsUser: 1001
-      initContainers:
-      - name: init-chmod-data
-        image: docker.io/bitnami/minideb:latest
-        imagePullPolicy: "Always"
-        command:
-          - sh
-          - -c
-          - |
-            chown -R 1001:1001 /bitnami
-            if [ -d /bitnami/postgresql/data ]; then
-              chmod  0700 /bitnami/postgresql/data;
-            fi
-        securityContext:
-          runAsUser: 0
-        volumeMounts:
-        - name: data
-          mountPath: /bitnami/postgresql
-      
       containers:
-      - name: postgres-postgresql
-        image: docker.io/bitnami/postgresql:10.6.0
-        imagePullPolicy: "Always"
-        resources:
-          requests:
-            cpu: 250m
-            memory: 256Mi
-          
+      - name: postgres
+        image: postgres:10.8
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 5432
         env:
-        - name: POSTGRESQL_USERNAME
-          value: "postgres"
-        - name: POSTGRESQL_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: postgres-postgresql
-              key: postgresql-password
+              name: db-credentials
+              key: POSTGRES_PASSWORD
         - name: POD_IP
           valueFrom: { fieldRef: { fieldPath: status.podIP } }
-        ports:
-        - name: postgresql
-          containerPort: 5432
-        livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - exec pg_isready -U "postgres" --host $POD_IP
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 6
         readinessProbe:
           exec:
             command:
@@ -168,26 +67,24 @@ spec:
           successThreshold: 1
           failureThreshold: 6
         volumeMounts:
-        - name: custom-init-scripts
-          mountPath: /docker-entrypoint-initdb.d
-        - name: data
-          mountPath: /bitnami/postgresql
-        
-        
-        
+          - mountPath: /var/lib/postgresql/data
+            name: postgredb
       volumes:
-      
-      - name: custom-init-scripts
-        configMap:
-          name: postgres-postgresql-init-scripts
-  updateStrategy:
-    type: RollingUpdate
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
-          - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: "8Gi"
+        - name: postgredb
+          persistentVolumeClaim:
+            namespace: addis-poc-devtest
+            claimName: postgres-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: addis-poc-devtest
+  labels:
+    app: postgres
+spec:
+  type: NodePort
+  ports:
+   - port: 5432
+  selector:
+   app: postgres

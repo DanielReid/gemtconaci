@@ -13,50 +13,27 @@ spec:
       labels:
         app: gemtc
     spec:
+      imagePullSecrets:
+      - name: registry-credentials
       volumes:
       - name: ssl-volume
         configMap:
           name: certs
-
       containers:
       - name: gemtc
-        image: inklin/gemtc
-
+        image: registry.drugis.org/gemtc-closed
         volumeMounts:
         - name: ssl-volume
           mountPath: /var/lib/gemtc/ssl
-
         env:
-        - name: DB_HOST
-          value: "postgres-postgresql"
-        - name: GEMTC_GOOGLE_KEY
-          value: "100331616436-dgi00c0mjg8tbc06psuhluf9a2lo6c3i.apps.googleusercontent.com"
-        - name: "GEMTC_AUTHENTICATION_METHOD"
-          value: "LOCAL"
-        - name: "GEMTC_GOOGLE_SECRET"
-          value: "9ROcvzLDuRbITbqj-m-W5C0I"
-        - name: "GEMTC_COOKIE_SECRET"
-          value: "GDFBDF#$%*asdfg098"
-        - name: "GEMTC_DB"
-          value: "gemtc"
-        - name: "GEMTC_HOST"
-          value: "http://addispoc.corpnet1.com:3001"
-        - name: "GEMTC_DB_USERNAME"
-          value: "gemtc"
-        - name: "GEMTC_DB_PASSWORD"
-          value: "develop"
-        - name: "PATAVI_CLIENT_CRT"
-          value: "ssl/crt.pem"
-        - name: "PATAVI_CLIENT_KEY"
-          value: "ssl/key.pem"
-        - name: "PATAVI_CA"
-          value: "ssl/ca-crt.pem"
-
-        - name: "PATAVI_HOST"
-          value: "addispatavi.corpnet1.com"
+        - name: GEMTC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: GEMTC_DB_PASSWORD
+        envFrom:
+        - configMapRef:
+            name: gemtc-settings
         ports:
         - name: gemtc
           containerPort: 3001
-        resources:
-          limits:
-            cpu: "0.5"
